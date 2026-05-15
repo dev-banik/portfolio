@@ -89,10 +89,41 @@ using (var scope = app.Services.CreateScope())
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         context.Database.Migrate();
         Log.Information("Database migrated successfully.");
+
+        // Ensure admin user exists with correct credentials
+        var adminId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+        var admin = await context.Users.FindAsync(adminId);
+        if (admin == null)
+        {
+            context.Users.Add(new Portfolio.Domain.Entities.User
+            {
+                Id = adminId,
+                Email = "admin@portfolio.com",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123456"),
+                FirstName = "Parthib",
+                LastName = "Banik",
+                Role = "Admin",
+                IsActive = true,
+                EmailConfirmed = true,
+                CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAt = DateTime.UtcNow
+            });
+            await context.SaveChangesAsync();
+            Log.Information("Admin user created.");
+        }
+        else
+        {
+            // Always sync password so it matches Admin@123456
+            admin.PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123456");
+            admin.IsActive = true;
+            admin.UpdatedAt = DateTime.UtcNow;
+            await context.SaveChangesAsync();
+            Log.Information("Admin user password synced.");
+        }
     }
     catch (Exception ex)
     {
-        Log.Error(ex, "Database migration failed: {Message}", ex.Message);
+        Log.Error(ex, "Startup initialization failed: {Message}", ex.Message);
     }
 }
 

@@ -50,18 +50,20 @@ public class DashboardController : ControllerBase
         };
 
         var sixMonthsAgo = DateTime.UtcNow.AddMonths(-6);
-        var visits = await _uow.VisitorAnalytics.Query()
+        var rawVisits = await _uow.VisitorAnalytics.Query()
             .Where(v => v.VisitedAt >= sixMonthsAgo)
-            .GroupBy(v => new { v.VisitedAt.Year, v.VisitedAt.Month })
+            .Select(v => new { v.VisitedAt.Year, v.VisitedAt.Month })
+            .ToListAsync();
+
+        stats.MonthlyVisits = rawVisits
+            .GroupBy(v => new { v.Year, v.Month })
             .Select(g => new MonthlyVisit
             {
                 Month = $"{g.Key.Year}-{g.Key.Month:D2}",
                 Count = g.Count()
             })
             .OrderBy(v => v.Month)
-            .ToListAsync();
-
-        stats.MonthlyVisits = visits;
+            .ToList();
         return Ok(ApiResponse<DashboardStats>.Ok(stats));
     }
 }
