@@ -40,7 +40,7 @@ public class SectionDto
 }
 
 [ApiController]
-[Route("api/v1/[controller]")]
+[Route("api/v1/site-config")]
 public class SiteConfigController : ControllerBase
 {
     private readonly IUnitOfWork _uow;
